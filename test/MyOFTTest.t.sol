@@ -18,13 +18,15 @@ contract MyOFTTest is Test {
 
    function setUp() public {
       vm.startPrank(user);
-      // Deploy mocks
+      // Deploy endpoints source and destination
       lzEndpointSource = new LZEndpointMock(1);     // source chainId = 1
       lzEndpointDestination = new LZEndpointMock(101);  // dest chainId = 101
-      // Deploy source and destination
+      
+      // Deploy the ERC20 token on source and destination
       sourceToken = new MyOFT("CrosschainToken", "CT", address(lzEndpointSource));
       destinationToken = new MyOFT("CrosschainToken", "CT", address(lzEndpointDestination));
-      // mint from source to user
+      
+      // Mint 100 ERC20 tokens from source to user
       sourceToken.mint(user, 100 ether);
 
       bytes memory remoteOnDestination = abi.encodePacked(address(destinationToken), address(sourceToken));
@@ -42,10 +44,10 @@ contract MyOFTTest is Test {
    function testBasicTransferSimulation() public {
       vm.startPrank(user);
 
-      // Send ETH to the user so they can pay for the mock fee
+      // Send ETH to the user so they can pay for the fee
       vm.deal(user, 1 ether);
       
-      // Simulate sending 10 tokens cross-chain (manually trigger receive for test)
+      // Simulate sending 10 ERC20 tokens cross-chain (manually trigger receive for test)
       sourceToken.sendFrom{value: 0.1 ether}(
          user,                   // sender
          101,                    // destination chain id example
@@ -57,6 +59,9 @@ contract MyOFTTest is Test {
       );
 
       vm.stopPrank();
+
+      assertEq(sourceToken.balanceOf(user), 90 ether);
+      assertEq(destinationToken.balanceOf(user), 10 ether);
 
    }
 }
